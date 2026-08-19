@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Background surfaces */
+  --background: #f7f8f8;
+  --foreground: #171717;
+
+  /* Panel backgrounds */
+  --panel: #f3f4f5;
+  --panel-foreground: #171717;
+
+  /* Surface elevation */
+  --card: #ffffff;
+  --card-foreground: #171717;
+
+  /* Muted */
+  --muted: #f3f4f5;
+  --muted-foreground: #737373;
+
+  /* Border */
+  --border: #e6e6e6;
+  --input: #e6e6e6;
+  --ring: #5e6ad2;
+
+  /* Brand accent - Light mode */
+  --primary: #5e6ad2;
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: #f3f4f5;
+  --secondary-foreground: #171717;
+
+  /* Destructive */
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+
+  /* Sidebar */
+  --sidebar: #f7f8f8;
+  --sidebar-foreground: #171717;
+  --sidebar-border: #e6e6e6;
+  --sidebar-accent: #f3f4f5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-muted: #a3a3a3;
+
+  /* Chart colors */
+  --chart-1: #5e6ad2;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #8b5cf6;
+
+  /* Radius */
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Background surfaces - Linear-inspired dark */
+  --background: #08090a;
+  --foreground: #f7f8f8;
+
+  /* Panel backgrounds */
+  --panel: #0f1011;
+  --panel-foreground: #f7f8f8;
+
+  /* Surface elevation */
+  --card: #191a1b;
+  --card-foreground: #f7f8f8;
+
+  /* Muted */
+  --muted: #191a1b;
+  --muted-foreground: #8a8f98;
+
+  /* Border - Semi-transparent white */
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #7170ff;
+
+  /* Brand accent - Dark mode */
+  --primary: #5e6ad2;
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: #191a1b;
+  --secondary-foreground: #f7f8f8;
+
+  /* Destructive */
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+
+  /* Sidebar */
+  --sidebar: #0f1011;
+  --sidebar-foreground: #f7f8f8;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-accent: #191a1b;
+  --sidebar-accent-foreground: #f7f8f8;
+  --sidebar-muted: #62666d;
+
+  /* Chart colors - adjusted for dark */
+  --chart-1: #7170ff;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #a78bfa;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+/* Inter Variable with OpenType features for Linear-inspired typography */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  src: url("https://fonts.gstatic.com/s/intervariable/v1/1Ptig85TRHYf3nWQMbgw.woff2") format("woff2");
+}
+
+* {
+  border-color: var(--border);
+}
+
+/* Focus ring styles - accessible */
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Remove default outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
