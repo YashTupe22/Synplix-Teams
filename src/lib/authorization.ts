@@ -100,6 +100,8 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   ],
   employee: [
     Permission.DASHBOARD_VIEW,
+    Permission.CRM_VIEW,
+    Permission.SALES_VIEW,
     Permission.TASKS_VIEW,
     Permission.TASKS_MANAGE,
     Permission.PROJECTS_VIEW,
