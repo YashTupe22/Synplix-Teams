@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS public.documents (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Enable trgm extension for search (safe to call multiple times, must be before index)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS documents_uploaded_by_idx ON public.documents (uploaded_by);
 CREATE INDEX IF NOT EXISTS documents_created_at_idx ON public.documents (created_at DESC);
@@ -37,9 +40,6 @@ CREATE INDEX IF NOT EXISTS documents_mime_type_idx ON public.documents (mime_typ
 CREATE INDEX IF NOT EXISTS documents_entity_idx ON public.documents (entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS documents_entity_created_idx ON public.documents (entity_type, entity_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS documents_file_name_idx ON public.documents USING gin (file_name gin_trgm_ops);
-
--- Enable trgm extension for search (safe to call multiple times)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Trigger for updated_at
 DROP TRIGGER IF EXISTS set_documents_updated_at ON public.documents;
