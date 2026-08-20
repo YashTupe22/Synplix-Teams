@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormStatus } from "react-dom";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X, FileText, AlertCircle } from "lucide-react";
@@ -45,7 +46,7 @@ export function DocumentUploader({
   entityId,
   onSuccess,
 }: DocumentUploaderProps) {
-  const [state, formAction] = useFormState(uploadDocumentAction, {});
+  const [state, formAction] = useActionState(uploadDocumentAction, {});
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);

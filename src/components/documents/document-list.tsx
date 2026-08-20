@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -42,7 +42,7 @@ export function DocumentList({ documents, onDelete }: DocumentListProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string>("");
-  const [, deleteFormAction] = useFormState(
+  const [, deleteFormAction] = useActionState(
     deleteDocumentAction,
     {}
   );
