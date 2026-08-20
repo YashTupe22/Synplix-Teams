@@ -13,6 +13,7 @@ import {
   TASK_STATUS_CONFIG,
   TASK_PRIORITY_CONFIG,
 } from "@/types/tasks";
+import { DocumentSection } from "@/components/documents/document-section";
 import { format } from "date-fns";
 import {
   Pencil,
@@ -211,6 +212,8 @@ export default async function TaskDetailPage({
               </div>
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="task" entityId={id} />
         </div>
       </div>
     </div>

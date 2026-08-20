@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { PROJECT_STATUS_CONFIG, PROJECT_PRIORITY_CONFIG } from "@/types/clients";
+import { DocumentSection } from "@/components/documents/document-section";
 import { TASK_STATUS_CONFIG } from "@/types/tasks";
 import { QUOTATION_STATUS_CONFIG, INVOICE_STATUS_CONFIG, formatCurrency, InvoiceStatus, QuotationStatus } from "@/types/finance";
 import { MilestoneList } from "@/components/projects/milestone-list";
@@ -350,6 +351,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               )}
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="project" entityId={id} />
         </div>
       </div>
     </div>

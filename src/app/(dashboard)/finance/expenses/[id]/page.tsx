@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EXPENSE_CATEGORY_CONFIG, EXPENSE_STATUS_CONFIG, formatCurrency } from "@/types/finance";
+import { DocumentSection } from "@/components/documents/document-section";
 import { Receipt, Calendar, User, FolderKanban, Tag } from "lucide-react";
 import Link from "next/link";
 
@@ -138,6 +139,8 @@ export default async function ExpenseDetailPage({ params }: { params: Promise<{ 
               <p className="text-3xl font-bold">{formatCurrency(expense.amount)}</p>
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="expense" entityId={id} />
         </div>
       </div>
     </div>

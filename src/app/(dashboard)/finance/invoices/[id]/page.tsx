@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { INVOICE_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, formatCurrency, PaymentWithRelations } from "@/types/finance";
+import { DocumentSection } from "@/components/documents/document-section";
 import { Receipt, Calendar, User, FolderKanban, CreditCard, Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -276,6 +277,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               )}
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="invoice" entityId={id} />
         </div>
       </div>
     </div>

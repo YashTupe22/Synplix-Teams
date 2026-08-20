@@ -94,6 +94,8 @@ const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     Permission.PROJECTS_MANAGE,
     Permission.TASKS_VIEW,
     Permission.TASKS_MANAGE,
+    Permission.DOCUMENTS_VIEW,
+    Permission.DOCUMENTS_MANAGE,
     Permission.ANALYTICS_VIEW,
     Permission.PROFILE_VIEW,
     Permission.PROFILE_EDIT,

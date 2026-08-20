@@ -10,6 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { CLIENT_STATUS_CONFIG } from "@/types/clients";
 import { PROJECT_STATUS_CONFIG } from "@/types/clients";
 import { QUOTATION_STATUS_CONFIG, INVOICE_STATUS_CONFIG, formatCurrency, InvoiceStatus, QuotationStatus } from "@/types/finance";
+import { DocumentSection } from "@/components/documents/document-section";
 import { Building2, User, Calendar, FileText, FolderKanban, Plus, Receipt, CreditCard } from "lucide-react";
 import Link from "next/link";
 
@@ -302,6 +303,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               </div>
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="client" entityId={id} />
         </div>
       </div>
     </div>

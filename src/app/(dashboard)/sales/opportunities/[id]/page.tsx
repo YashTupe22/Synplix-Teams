@@ -16,6 +16,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SALES_STAGE_CONFIG, OPEN_STAGES } from "@/types/sales";
 import { StageChanger } from "@/components/sales/stage-changer";
 import { ConvertToClient } from "@/components/sales/convert-to-client";
+import { DocumentSection } from "@/components/documents/document-section";
 import { format } from "date-fns";
 import {
   Pencil,
@@ -289,6 +290,8 @@ export default async function OpportunityDetailPage({
               )}
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="opportunity" entityId={id} />
         </div>
       </div>
     </div>

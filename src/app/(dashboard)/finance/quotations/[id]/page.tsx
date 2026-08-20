@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { QUOTATION_STATUS_CONFIG, formatCurrency } from "@/types/finance";
+import { DocumentSection } from "@/components/documents/document-section";
 import { FileText, Calendar, User, FolderKanban, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -228,6 +229,8 @@ export default async function QuotationDetailPage({ params }: { params: Promise<
               )}
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="quotation" entityId={id} />
         </div>
       </div>
     </div>

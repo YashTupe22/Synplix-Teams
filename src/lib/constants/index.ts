@@ -67,8 +67,7 @@ export const NAV_ITEMS = [
     title: "Documents",
     href: "/documents",
     icon: "FileText" as const,
-    disabled: true,
-    comingSoon: true,
+    disabled: false,
     permission: "documents.view" as const,
   },
   {

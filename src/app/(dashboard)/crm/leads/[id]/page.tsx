@@ -5,6 +5,7 @@ import { getOpportunities, getCalls, getFollowUps } from "@/services/sales";
 import { updateLeadStatusAction, addLeadActivityAction, addLeadNoteAction, archiveLeadAction } from "../actions";
 import { LeadDetail } from "@/components/crm/lead-detail";
 import { LeadSalesSection } from "@/components/sales/lead-sales-section";
+import { DocumentSection } from "@/components/documents/document-section";
 import { Separator } from "@/components/ui/separator";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -53,6 +54,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         isAdmin={isAdmin}
         isManager={isManager}
       />
+      <Separator className="my-6" />
+      <DocumentSection entityType="lead" entityId={id} />
     </div>
   );
 }

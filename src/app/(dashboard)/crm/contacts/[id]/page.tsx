@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { Pencil, Mail, Phone, ExternalLink } from "lucide-react";
+import { DocumentSection } from "@/components/documents/document-section";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -86,6 +87,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               </p>
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="contact" entityId={id} />
         </div>
       </div>
     </div>

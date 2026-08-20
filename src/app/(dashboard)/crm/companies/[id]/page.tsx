@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { LEAD_STATUS_CONFIG } from "@/types/crm";
+import { DocumentSection } from "@/components/documents/document-section";
 import { Pencil, ExternalLink } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -104,6 +105,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
               )}
             </CardContent>
           </Card>
+
+          <DocumentSection entityType="company" entityId={id} />
         </div>
       </div>
     </div>
