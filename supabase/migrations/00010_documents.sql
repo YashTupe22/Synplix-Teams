@@ -452,3 +452,35 @@ CREATE POLICY "Employees can delete own uploaded documents"
 REVOKE ALL ON public.documents FROM PUBLIC;
 REVOKE ALL ON public.documents FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.documents TO authenticated;
+
+-- ============================================================
+-- STORAGE BUCKET POLICIES
+-- ============================================================
+
+-- Allow authenticated users to upload to synplix-documents bucket
+CREATE POLICY "Authenticated users can upload documents"
+    ON storage.objects
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        bucket_id = 'synplix-documents'
+    );
+
+-- Allow authenticated users to read files in the bucket
+CREATE POLICY "Authenticated users can view documents"
+    ON storage.objects
+    FOR SELECT
+    TO authenticated
+    USING (
+        bucket_id = 'synplix-documents'
+    );
+
+-- Allow authenticated users to delete files in the bucket
+-- (database-level authorization controls who can call delete)
+CREATE POLICY "Authenticated users can delete documents"
+    ON storage.objects
+    FOR DELETE
+    TO authenticated
+    USING (
+        bucket_id = 'synplix-documents'
+    );
