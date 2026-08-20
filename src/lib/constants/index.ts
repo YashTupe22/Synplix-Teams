@@ -4,7 +4,7 @@ export const SITE_CONFIG = {
   url: "https://synplix-teams.vercel.app",
 } as const;
 
-export type NavItemPermission = "crm.view" | "sales.view" | "clients.view" | "projects.view" | "tasks.view" | "finance.view" | "documents.view" | "users.view" | "analytics.view" | "settings.manage";
+export type NavItemPermission = "crm.view" | "sales.view" | "clients.view" | "projects.view" | "tasks.view" | "tasks.manage" | "finance.view" | "documents.view" | "users.view" | "analytics.view" | "settings.manage";
 
 export const NAV_ITEMS = [
   {
@@ -53,8 +53,7 @@ export const NAV_ITEMS = [
     title: "Tasks",
     href: "/tasks",
     icon: "CheckSquare" as const,
-    disabled: true,
-    comingSoon: true,
+    disabled: false,
     permission: "tasks.view" as const,
   },
   {

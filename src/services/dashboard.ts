@@ -50,15 +50,15 @@ async function getCRMData(supabase: ReturnType<typeof createClient> extends Prom
   return { totalLeads: totalLeads ?? 0, statusCounts };
 }
 
-function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }): KpiCard[] {
+function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }, taskData?: { total: number; todo: number; inProgress: number; blocked: number; overdue: number; dueToday: number; completed: number }): KpiCard[] {
   const baseKpis: KpiCard[] = [
     {
       id: "tasks",
-      title: "Pending Tasks",
-      value: "—",
-      description: "Coming in Phase 7",
+      title: "My Tasks",
+      value: taskData?.total ?? 0,
+      description: taskData?.overdue ? `${taskData.overdue} overdue` : `${taskData?.inProgress ?? 0} in progress`,
       icon: "CheckSquare",
-      status: "coming-soon",
+      status: taskData?.overdue ? "empty" : "available",
       module: "tasks",
     },
   ];
@@ -236,9 +236,9 @@ function buildQuickActions(role: UserRole): QuickAction[] {
       label: "Create Task",
       icon: "CheckSquare",
       href: "/tasks/new",
-      enabled: false,
+      enabled: true,
       permission: Permission.TASKS_MANAGE,
-      description: "Tasks module coming in Phase 5",
+      description: "Create a new task",
     },
     {
       id: "create-quotation",
@@ -300,8 +300,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
   const role = profile.role as UserRole;
 
-  // Fetch CRM data, sales data, client/project data, and recent activity in parallel
-  const [crmData, salesResult, clientProjectResult, auditResult] = await Promise.all([
+  // Fetch CRM data, sales data, client/project data, task data, and recent activity in parallel
+  const [crmData, salesResult, clientProjectResult, taskResult, auditResult] = await Promise.all([
     getCRMData(supabase, role, user.id),
     (role === "admin" || role === "manager" || role === "employee")
       ? supabase.from("sales_opportunities").select("stage, value, probability").then(async (oppRes) => {
@@ -387,6 +387,34 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
           };
         })()
       : Promise.resolve(undefined),
+    // Task data
+    (role === "admin" || role === "manager" || role === "employee")
+      ? (async () => {
+          const today = new Date().toISOString().split("T")[0];
+
+          let taskQuery = supabase
+            .from("tasks")
+            .select("id, status, due_date, assigned_to");
+
+          if (role === "employee") {
+            taskQuery = taskQuery.eq("assigned_to", user.id);
+          }
+
+          const { data: tasks } = await taskQuery;
+          const allTasks = tasks || [];
+          const activeTasks = allTasks.filter((t) => t.status !== "completed" && t.status !== "cancelled");
+
+          return {
+            total: allTasks.length,
+            todo: allTasks.filter((t) => t.status === "todo").length,
+            inProgress: allTasks.filter((t) => t.status === "in_progress").length,
+            blocked: allTasks.filter((t) => t.status === "blocked").length,
+            overdue: activeTasks.filter((t) => t.due_date && t.due_date < today).length,
+            dueToday: activeTasks.filter((t) => t.due_date === today).length,
+            completed: allTasks.filter((t) => t.status === "completed").length,
+          };
+        })()
+      : Promise.resolve(undefined),
     role === "admin"
       ? supabase
           .from("audit_logs")
@@ -411,15 +439,15 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     user: profile as Profile,
     greeting: getGreeting(),
     currentDate: formatDate(),
-    kpis: buildKpis(role, crmData, salesResult, clientProjectResult),
+    kpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult),
     priorities: [],
     recentActivity,
     salesPipeline: buildPipeline(crmData.statusCounts),
     projects: [],
     quickActions: buildQuickActions(role),
     stats: {
-      totalKpis: buildKpis(role, crmData, salesResult, clientProjectResult).length,
-      availableKpis: buildKpis(role, crmData, salesResult, clientProjectResult).filter((k) => k.status === "available").length,
+      totalKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult).length,
+      availableKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult).filter((k) => k.status === "available").length,
       totalPriorities: 0,
       totalActivity: recentActivity.length,
     },
@@ -462,6 +490,14 @@ function formatAuditAction(action: string): string {
     milestone_created: "Milestone created",
     milestone_completed: "Milestone completed",
     milestone_updated: "Milestone updated",
+    task_created: "Task created",
+    task_completed: "Task completed",
+    task_status_changed: "Task status changed",
+    task_assigned: "Task assigned",
+    task_priority_changed: "Task priority changed",
+    task_due_date_changed: "Task due date changed",
+    task_deleted: "Task deleted",
+    comment_created: "Comment added",
   };
   return actionMap[action] ?? action.replace(/_/g, " ");
 }
@@ -528,6 +564,22 @@ function formatAuditDescription(log: {
       return `${actor} created milestone "${meta?.name ?? "unknown"}"`;
     case "milestone_completed":
       return `${actor} completed milestone "${meta?.name ?? "unknown"}"`;
+    case "task_created":
+      return `${actor} created task "${meta?.title ?? "unknown"}"`;
+    case "task_completed":
+      return `${actor} completed task "${meta?.title ?? "unknown"}"`;
+    case "task_status_changed":
+      return `${actor} changed task status to ${meta?.new_status ?? "unknown"}`;
+    case "task_assigned":
+      return `${actor} assigned task "${meta?.title ?? "unknown"}"`;
+    case "task_priority_changed":
+      return `${actor} changed task priority to ${meta?.new_priority ?? "unknown"}`;
+    case "task_due_date_changed":
+      return `${actor} changed task due date`;
+    case "task_deleted":
+      return `${actor} deleted task "${meta?.title ?? "unknown"}"`;
+    case "comment_created":
+      return `${actor} added a comment`;
     default:
       return `${actor} performed ${log.action.replace(/_/g, " ")}`;
   }
@@ -544,6 +596,8 @@ function inferTargetType(action: string): string {
   if (action.includes("client")) return "client";
   if (action.includes("project")) return "project";
   if (action.includes("milestone")) return "milestone";
+  if (action.includes("task")) return "task";
+  if (action.includes("comment")) return "comment";
   return "unknown";
 }
 
