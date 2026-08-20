@@ -52,7 +52,7 @@ async function getCRMData(supabase: ReturnType<typeof createClient> extends Prom
   return { totalLeads: totalLeads ?? 0, statusCounts };
 }
 
-function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }, taskData?: { total: number; todo: number; inProgress: number; blocked: number; overdue: number; dueToday: number; completed: number }, financeData?: { revenueThisMonth: number; outstanding: number; overdue: number }): KpiCard[] {
+function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }, taskData?: { total: number; todo: number; inProgress: number; blocked: number; overdue: number; dueToday: number; completed: number }, financeData?: { revenueTotal: number; outstanding: number; overdue: number }): KpiCard[] {
   const baseKpis: KpiCard[] = [
     {
       id: "tasks",
@@ -127,9 +127,9 @@ function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: 
   const adminKpis: KpiCard[] = [
     {
       id: "revenue",
-      title: "Revenue This Month",
-      value: financeData?.revenueThisMonth ? `₹${(financeData.revenueThisMonth / 1000).toFixed(0)}K` : "₹0",
-      description: "Payments received",
+      title: "Total Revenue",
+      value: financeData?.revenueTotal ? `₹${(financeData.revenueTotal / 1000).toFixed(0)}K` : "₹0",
+      description: "All payments received",
       icon: "DollarSign",
       status: "available",
       module: "finance",
@@ -418,20 +418,16 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
           };
         })()
       : Promise.resolve(undefined),
-    // Finance data (admin only)
+    // Finance data (admin only) — all-time revenue
     role === "admin"
       ? (async () => {
           const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
           const today = now.toISOString().split("T")[0];
 
           const [paymentsRes, invoicesRes] = await Promise.all([
             supabase
               .from("payments")
-              .select("amount")
-              .gte("payment_date", monthStart)
-              .lte("payment_date", monthEnd),
+              .select("amount"),
             supabase
               .from("invoices")
               .select("total_amount, balance_due, due_date, status")
@@ -441,7 +437,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
           const payments = paymentsRes.data || [];
           const invoices = invoicesRes.data || [];
 
-          const revenueThisMonth = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+          const revenueTotal = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
           const outstanding = invoices
             .filter((i) => i.status !== "paid" && i.status !== "cancelled")
             .reduce((sum, i) => sum + (Number(i.balance_due) || 0), 0);
@@ -449,7 +445,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
             .filter((i) => i.status !== "paid" && i.status !== "cancelled" && i.due_date && i.due_date < today)
             .reduce((sum, i) => sum + (Number(i.balance_due) || 0), 0);
 
-          return { revenueThisMonth, outstanding, overdue };
+          return { revenueTotal, outstanding, overdue };
         })()
       : Promise.resolve(undefined),
     // Audit logs (all users)
