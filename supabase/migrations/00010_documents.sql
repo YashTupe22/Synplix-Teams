@@ -193,9 +193,9 @@ CREATE POLICY "Employees can view documents for their opportunities"
         AND public.is_user_active(auth.uid())
         AND entity_type = 'opportunity'
         AND EXISTS (
-            SELECT 1 FROM public.opportunities o
+            SELECT 1 FROM public.sales_opportunities o
             WHERE o.id = documents.entity_id
-              AND o.assigned_to = auth.uid()
+              AND o.owner_id = auth.uid()
         )
     );
 
@@ -215,7 +215,7 @@ CREATE POLICY "Employees can view documents for their companies"
         )
     );
 
--- Employee: can view documents on contacts linked to their opportunities/leads
+-- Employee: can view documents on contacts linked to their leads
 CREATE POLICY "Employees can view documents for their contacts"
     ON public.documents
     FOR SELECT
@@ -224,17 +224,10 @@ CREATE POLICY "Employees can view documents for their contacts"
         public.get_user_role(auth.uid()) = 'employee'
         AND public.is_user_active(auth.uid())
         AND entity_type = 'contact'
-        AND (
-            EXISTS (
-                SELECT 1 FROM public.leads l
-                WHERE l.contact_id = documents.entity_id
-                  AND l.assigned_to = auth.uid()
-            )
-            OR EXISTS (
-                SELECT 1 FROM public.opportunities o
-                WHERE o.contact_id = documents.entity_id
-                  AND o.assigned_to = auth.uid()
-            )
+        AND EXISTS (
+            SELECT 1 FROM public.leads l
+            WHERE l.contact_id = documents.entity_id
+              AND l.assigned_to = auth.uid()
         )
     );
 
@@ -368,9 +361,9 @@ CREATE POLICY "Employees can insert documents for their opportunities"
         AND uploaded_by = auth.uid()
         AND entity_type = 'opportunity'
         AND EXISTS (
-            SELECT 1 FROM public.opportunities o
+            SELECT 1 FROM public.sales_opportunities o
             WHERE o.id = documents.entity_id
-              AND o.assigned_to = auth.uid()
+              AND o.owner_id = auth.uid()
         )
     );
 
