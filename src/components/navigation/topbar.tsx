@@ -26,9 +26,10 @@ const ROLE_LABELS: Record<UserRole, string> = {
 interface TopbarProps {
   onMenuToggle?: () => void;
   user?: Profile;
+  notificationBell?: React.ReactNode;
 }
 
-export function Topbar({ onMenuToggle, user }: TopbarProps) {
+export function Topbar({ onMenuToggle, user, notificationBell }: TopbarProps) {
   const { setTheme } = useTheme();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -119,11 +120,12 @@ export function Topbar({ onMenuToggle, user }: TopbarProps) {
 
         <Separator orientation="vertical" className="h-6" />
 
-        {/* Notifications placeholder */}
-        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
-          <Bell className="size-4" />
-          <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary" />
-        </Button>
+        {/* Notifications */}
+        {notificationBell || (
+          <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+            <Bell className="size-4" />
+          </Button>
+        )}
 
         <Separator orientation="vertical" className="h-6" />
 

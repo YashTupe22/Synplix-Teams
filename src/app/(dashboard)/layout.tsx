@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { NotificationBellWrapper } from "@/components/notifications/notification-bell-wrapper";
 
 export default async function DashboardLayout({
   children,
@@ -30,7 +31,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell user={profile}>
+    <DashboardShell user={profile} notificationBell={<NotificationBellWrapper />}>
       {children}
     </DashboardShell>
   );

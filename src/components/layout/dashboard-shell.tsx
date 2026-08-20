@@ -9,9 +9,10 @@ import type { Profile } from "@/types/database";
 interface DashboardShellProps {
   children: React.ReactNode;
   user?: Profile;
+  notificationBell?: React.ReactNode;
 }
 
-export function DashboardShell({ children, user }: DashboardShellProps) {
+export function DashboardShell({ children, user, notificationBell }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   return (
@@ -31,6 +32,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         <Topbar
           onMenuToggle={() => setSidebarCollapsed((prev) => !prev)}
           user={user}
+          notificationBell={notificationBell}
         />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

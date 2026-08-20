@@ -2,13 +2,15 @@ import { notFound } from "next/navigation";
 import { requirePermission, Permission } from "@/lib/authorization-server";
 import { getClientById, getClientNotes } from "@/services/clients";
 import { getProjects } from "@/services/projects";
+import { getClientBilling } from "@/services/finance";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { CLIENT_STATUS_CONFIG } from "@/types/clients";
 import { PROJECT_STATUS_CONFIG } from "@/types/clients";
-import { Building2, User, Calendar, FileText, FolderKanban, Plus } from "lucide-react";
+import { QUOTATION_STATUS_CONFIG, INVOICE_STATUS_CONFIG, formatCurrency, InvoiceStatus, QuotationStatus } from "@/types/finance";
+import { Building2, User, Calendar, FileText, FolderKanban, Plus, Receipt, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -24,10 +26,17 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const [projectsResult, notesResult] = await Promise.all([
+  type BillingInvoice = { id: string; invoice_number: string; status: InvoiceStatus; total_amount: number; amount_paid: number; balance_due: number; invoice_date: string; due_date: string | null };
+  type BillingQuotation = { id: string; quotation_number: string; status: QuotationStatus; total_amount: number; quotation_date: string };
+  type BillingResult = { quotations: BillingQuotation[]; invoices: BillingInvoice[]; totalInvoiced: number; totalPaid: number; outstanding: number; overdue: number };
+
+  const [projectsResult, notesResult, billingResultRaw] = await Promise.all([
     getProjects({ client_id: id, limit: 100 }, profile).catch(() => ({ data: [], total: 0, page: 1, limit: 100, totalPages: 0 })),
     getClientNotes(id, 1, 10).catch(() => ({ data: [], total: 0, page: 1, limit: 10, totalPages: 0 })),
+    getClientBilling(id).catch((): BillingResult => ({ quotations: [], invoices: [], totalInvoiced: 0, totalPaid: 0, outstanding: 0, overdue: 0 })),
   ]);
+
+  const billingResult = billingResultRaw as BillingResult;
 
   const statusCfg = CLIENT_STATUS_CONFIG[client.status];
 
@@ -207,6 +216,90 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                   <span>{client.opportunity.title}</span>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Billing Summary */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Receipt className="size-4" />
+                Billing
+              </CardTitle>
+              <Link
+                href={`/finance/quotations/new?client_id=${id}`}
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                <Plus className="mr-1 size-3" /> New
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total Invoiced</p>
+                  <p className="text-lg font-bold">{formatCurrency(billingResult.totalInvoiced)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Total Paid</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(billingResult.totalPaid)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Outstanding</p>
+                  <p className="text-lg font-bold text-yellow-600">{formatCurrency(billingResult.outstanding)}</p>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <p className="text-xs text-muted-foreground">Overdue</p>
+                  <p className="text-lg font-bold text-red-600">{formatCurrency(billingResult.overdue)}</p>
+                </div>
+              </div>
+
+              {/* Recent Invoices */}
+              <div>
+                <p className="text-sm font-medium mb-2">Recent Invoices</p>
+                {billingResult.invoices.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No invoices yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {billingResult.invoices.slice(0, 3).map((inv) => (
+                      <Link key={inv.id} href={`/finance/invoices/${inv.id}`} className="block">
+                        <div className="flex items-center justify-between rounded-lg border border-border p-2 text-xs hover:bg-muted/50">
+                          <div>
+                            <span className="font-medium">{inv.invoice_number}</span>
+                            <Badge variant="outline" className={`ml-2 text-[9px] ${INVOICE_STATUS_CONFIG[inv.status]?.color}`}>
+                              {INVOICE_STATUS_CONFIG[inv.status]?.label}
+                            </Badge>
+                          </div>
+                          <span>{formatCurrency(inv.total_amount)}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Quotations */}
+              <div>
+                <p className="text-sm font-medium mb-2">Recent Quotations</p>
+                {billingResult.quotations.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No quotations yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {billingResult.quotations.slice(0, 3).map((q) => (
+                      <Link key={q.id} href={`/finance/quotations/${q.id}`} className="block">
+                        <div className="flex items-center justify-between rounded-lg border border-border p-2 text-xs hover:bg-muted/50">
+                          <div>
+                            <span className="font-medium">{q.quotation_number}</span>
+                            <Badge variant="outline" className={`ml-2 text-[9px] ${QUOTATION_STATUS_CONFIG[q.status]?.color}`}>
+                              {QUOTATION_STATUS_CONFIG[q.status]?.label}
+                            </Badge>
+                          </div>
+                          <span>{formatCurrency(q.total_amount)}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -60,8 +60,7 @@ export const NAV_ITEMS = [
     title: "Finance",
     href: "/finance",
     icon: "DollarSign" as const,
-    disabled: true,
-    comingSoon: true,
+    disabled: false,
     permission: "finance.view" as const,
   },
   {
@@ -82,10 +81,9 @@ export const NAV_ITEMS = [
   },
   {
     title: "Settings",
-    href: "/settings",
+    href: "/settings/notifications",
     icon: "Settings" as const,
-    disabled: true,
-    comingSoon: true,
+    disabled: false,
     permission: "settings.manage" as const,
   },
 ] as const;

@@ -50,7 +50,7 @@ async function getCRMData(supabase: ReturnType<typeof createClient> extends Prom
   return { totalLeads: totalLeads ?? 0, statusCounts };
 }
 
-function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }, taskData?: { total: number; todo: number; inProgress: number; blocked: number; overdue: number; dueToday: number; completed: number }): KpiCard[] {
+function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: Record<string, number> }, salesData?: { totalOpen: number; pipelineValue: number; callsToday: number; followUpsToday: number; overdueFollowUps: number }, clientProjectData?: { activeClients: number; activeProjects: number; upcomingDeadlines: number }, taskData?: { total: number; todo: number; inProgress: number; blocked: number; overdue: number; dueToday: number; completed: number }, financeData?: { revenueThisMonth: number; outstanding: number; overdue: number }): KpiCard[] {
   const baseKpis: KpiCard[] = [
     {
       id: "tasks",
@@ -125,21 +125,21 @@ function buildKpis(role: UserRole, crmData: { totalLeads: number; statusCounts: 
   const adminKpis: KpiCard[] = [
     {
       id: "revenue",
-      title: "Revenue",
-      value: "—",
-      description: "Coming in Phase 8",
+      title: "Revenue This Month",
+      value: financeData?.revenueThisMonth ? `₹${(financeData.revenueThisMonth / 1000).toFixed(0)}K` : "₹0",
+      description: "Payments received",
       icon: "DollarSign",
-      status: "coming-soon",
+      status: "available",
       module: "finance",
     },
     ...managerKpis,
     {
       id: "payments",
-      title: "Pending Payments",
-      value: "—",
-      description: "Coming in Phase 8",
+      title: "Outstanding",
+      value: financeData?.outstanding ? `₹${(financeData.outstanding / 1000).toFixed(0)}K` : "₹0",
+      description: financeData?.overdue ? `₹${(financeData.overdue / 1000).toFixed(0)}K overdue` : "All on track",
       icon: "Clock",
-      status: "coming-soon",
+      status: financeData?.overdue ? "empty" : "available",
       module: "finance",
     },
   ];
@@ -300,8 +300,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
   const role = profile.role as UserRole;
 
-  // Fetch CRM data, sales data, client/project data, task data, and recent activity in parallel
-  const [crmData, salesResult, clientProjectResult, taskResult, auditResult] = await Promise.all([
+  // Fetch CRM data, sales data, client/project data, task data, finance data, and recent activity in parallel
+  const [crmData, salesResult, clientProjectResult, taskResult, financeResult, auditResult] = await Promise.all([
     getCRMData(supabase, role, user.id),
     (role === "admin" || role === "manager" || role === "employee")
       ? supabase.from("sales_opportunities").select("stage, value, probability").then(async (oppRes) => {
@@ -415,6 +415,40 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
           };
         })()
       : Promise.resolve(undefined),
+    // Finance data (admin only)
+    role === "admin"
+      ? (async () => {
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+          const today = now.toISOString().split("T")[0];
+
+          const [paymentsRes, invoicesRes] = await Promise.all([
+            supabase
+              .from("payments")
+              .select("amount")
+              .gte("payment_date", monthStart)
+              .lte("payment_date", monthEnd),
+            supabase
+              .from("invoices")
+              .select("total_amount, balance_due, due_date, status")
+              .neq("status", "cancelled"),
+          ]);
+
+          const payments = paymentsRes.data || [];
+          const invoices = invoicesRes.data || [];
+
+          const revenueThisMonth = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+          const outstanding = invoices
+            .filter((i) => i.status !== "paid" && i.status !== "cancelled")
+            .reduce((sum, i) => sum + (Number(i.balance_due) || 0), 0);
+          const overdue = invoices
+            .filter((i) => i.status !== "paid" && i.status !== "cancelled" && i.due_date && i.due_date < today)
+            .reduce((sum, i) => sum + (Number(i.balance_due) || 0), 0);
+
+          return { revenueThisMonth, outstanding, overdue };
+        })()
+      : Promise.resolve(undefined),
     role === "admin"
       ? supabase
           .from("audit_logs")
@@ -439,15 +473,15 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     user: profile as Profile,
     greeting: getGreeting(),
     currentDate: formatDate(),
-    kpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult),
+    kpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult),
     priorities: [],
     recentActivity,
     salesPipeline: buildPipeline(crmData.statusCounts),
     projects: [],
     quickActions: buildQuickActions(role),
     stats: {
-      totalKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult).length,
-      availableKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult).filter((k) => k.status === "available").length,
+      totalKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult).length,
+      availableKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult).filter((k) => k.status === "available").length,
       totalPriorities: 0,
       totalActivity: recentActivity.length,
     },
@@ -498,6 +532,25 @@ function formatAuditAction(action: string): string {
     task_due_date_changed: "Task due date changed",
     task_deleted: "Task deleted",
     comment_created: "Comment added",
+    quotation_created: "Quotation created",
+    quotation_updated: "Quotation updated",
+    quotation_sent: "Quotation sent",
+    quotation_accepted: "Quotation accepted",
+    quotation_rejected: "Quotation rejected",
+    quotation_expired: "Quotation expired",
+    quotation_cancelled: "Quotation cancelled",
+    quotation_deleted: "Quotation deleted",
+    invoice_created: "Invoice created",
+    invoice_updated: "Invoice updated",
+    invoice_sent: "Invoice sent",
+    invoice_partially_paid: "Invoice partially paid",
+    invoice_paid: "Invoice paid",
+    invoice_overdue: "Invoice overdue",
+    invoice_cancelled: "Invoice cancelled",
+    payment_recorded: "Payment recorded",
+    expense_created: "Expense created",
+    expense_updated: "Expense updated",
+    expense_cancelled: "Expense cancelled",
   };
   return actionMap[action] ?? action.replace(/_/g, " ");
 }
@@ -580,6 +633,26 @@ function formatAuditDescription(log: {
       return `${actor} deleted task "${meta?.title ?? "unknown"}"`;
     case "comment_created":
       return `${actor} added a comment`;
+    case "quotation_created":
+      return `${actor} created quotation "${meta?.quotation_number ?? "unknown"}"`;
+    case "quotation_accepted":
+      return `${actor} accepted quotation "${meta?.quotation_number ?? "unknown"}"`;
+    case "quotation_rejected":
+      return `${actor} rejected quotation "${meta?.quotation_number ?? "unknown"}"`;
+    case "quotation_cancelled":
+      return `${actor} cancelled quotation "${meta?.quotation_number ?? "unknown"}"`;
+    case "invoice_created":
+      return `${actor} created invoice "${meta?.invoice_number ?? "unknown"}"`;
+    case "invoice_paid":
+      return `${actor} marked invoice "${meta?.invoice_number ?? "unknown"}" as paid`;
+    case "invoice_cancelled":
+      return `${actor} cancelled invoice "${meta?.invoice_number ?? "unknown"}"`;
+    case "payment_recorded":
+      return `${actor} recorded a payment of ₹${meta?.amount ?? "unknown"}`;
+    case "expense_created":
+      return `${actor} created expense "${meta?.title ?? "unknown"}"`;
+    case "expense_cancelled":
+      return `${actor} cancelled expense "${meta?.title ?? "unknown"}"`;
     default:
       return `${actor} performed ${log.action.replace(/_/g, " ")}`;
   }
@@ -598,6 +671,10 @@ function inferTargetType(action: string): string {
   if (action.includes("milestone")) return "milestone";
   if (action.includes("task")) return "task";
   if (action.includes("comment")) return "comment";
+  if (action.includes("quotation")) return "quotation";
+  if (action.includes("invoice")) return "invoice";
+  if (action.includes("payment")) return "payment";
+  if (action.includes("expense")) return "expense";
   return "unknown";
 }
 

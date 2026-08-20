@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePermission, Permission } from "@/lib/authorization-server";
 import type { Profile } from "@/types/database";
+import { notifyProjectUpdated, notifyMilestoneUpdated } from "@/services/notification-integrations";
 import type {
   Project,
   ProjectInsert,
@@ -230,6 +231,9 @@ export async function updateProject(id: string, data: ProjectUpdate): Promise<Pr
     metadata,
   });
 
+  // Send notification to project members
+  await notifyProjectUpdated(profile.id, project.id, project.name).catch(() => {});
+
   return project;
 }
 
@@ -375,6 +379,23 @@ export async function updateMilestone(id: string, data: ProjectMilestoneUpdate):
     target_email: null,
     metadata: { milestone_id: milestone.id, name: milestone.name, status: data.status },
   });
+
+  // Send notification to project members
+  const { data: project } = await supabase
+    .from("projects")
+    .select("name")
+    .eq("id", milestone.project_id)
+    .single();
+
+  if (project) {
+    await notifyMilestoneUpdated(
+      profile.id,
+      milestone.id,
+      milestone.name,
+      milestone.project_id,
+      project.name
+    ).catch(() => {});
+  }
 
   return milestone;
 }

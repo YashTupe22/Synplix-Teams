@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePermission, Permission } from "@/lib/authorization-server";
 import type { Profile } from "@/types/database";
+import { notifyOpportunityWon } from "@/services/notification-integrations";
 import type {
   SalesOpportunity,
   SalesOpportunityInsert,
@@ -198,6 +199,11 @@ export async function updateOpportunity(id: string, data: SalesOpportunityUpdate
     target_email: null,
     metadata,
   });
+
+  // Send notification if opportunity is won
+  if (data.stage === "closed_won") {
+    await notifyOpportunityWon(profile.id, opp.id, opp.title, opp.project_id).catch(() => {});
+  }
 
   return opp;
 }

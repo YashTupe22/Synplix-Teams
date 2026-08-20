@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePermission, Permission } from "@/lib/authorization-server";
 import type { Profile } from "@/types/database";
+import { notifyLeadAssigned } from "@/services/notification-integrations";
 import type {
   Company,
   CompanyInsert,
@@ -399,6 +400,11 @@ export async function updateLead(id: string, data: LeadUpdate): Promise<Lead> {
     target_email: null,
     metadata,
   });
+
+  // Send notification if lead is assigned
+  if (data.assigned_to && data.assigned_to !== lead.assigned_to) {
+    await notifyLeadAssigned(profile.id, lead.id, lead.title, data.assigned_to).catch(() => {});
+  }
 
   return lead;
 }

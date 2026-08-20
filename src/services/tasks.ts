@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePermission } from "@/lib/authorization-server";
 import { Permission } from "@/lib/authorization";
 import {
+  notifyTaskAssigned,
+  notifyTaskReassigned,
+  notifyTaskCompleted,
+  notifyCommentAdded,
+} from "@/services/notification-integrations";
+import {
   TaskInsert,
   TaskUpdate,
   TaskWithRelations,
@@ -258,6 +264,17 @@ export async function createTask(
     },
   });
 
+  // Send notification if task is assigned
+  if (data.assigned_to) {
+    await notifyTaskAssigned(
+      profile.id,
+      data.id,
+      data.title,
+      data.assigned_to,
+      data.project_id
+    ).catch(() => {}); // Non-blocking
+  }
+
   return data as TaskWithRelations;
 }
 
@@ -388,6 +405,27 @@ export async function updateTask(
     });
   }
 
+  // Send notifications
+  if (updates.assigned_to && updates.assigned_to !== current.assigned_to) {
+    await notifyTaskReassigned(
+      profile.id,
+      data.id,
+      data.title,
+      updates.assigned_to,
+      data.project_id
+    ).catch(() => {});
+  }
+
+  if (updates.status === "completed" && current.status !== "completed") {
+    await notifyTaskCompleted(
+      profile.id,
+      data.id,
+      data.title,
+      data.project_id,
+      current.created_by
+    ).catch(() => {});
+  }
+
   return data as TaskWithRelations;
 }
 
@@ -474,6 +512,22 @@ export async function createTaskComment(
     target_id: data.id,
     metadata: { task_id: comment.task_id, content_preview: comment.content.substring(0, 100) },
   });
+
+  // Send comment notification
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("title")
+    .eq("id", comment.task_id)
+    .single();
+
+  if (task) {
+    await notifyCommentAdded(
+      profile.id,
+      comment.task_id,
+      task.title,
+      comment.content
+    ).catch(() => {});
+  }
 
   return data as TaskCommentWithRelations;
 }
