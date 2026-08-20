@@ -83,7 +83,7 @@ export function DashboardContent({ data }: DashboardContentProps) {
 
       {/* Second row */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Sales Pipeline - admin/manager only */}
+        {/* Sales Pipeline */}
         {(isAdmin || isManager) && (
           <SalesPipeline stages={data.salesPipeline} />
         )}
@@ -91,19 +91,10 @@ export function DashboardContent({ data }: DashboardContentProps) {
         {/* Project Overview */}
         <ProjectOverview projects={data.projects} />
 
-        {/* Quick Actions - fills remaining space */}
+        {/* Quick Actions */}
         {(isAdmin || isManager) && (
-          <div className={!(isAdmin || isManager) ? "lg:col-span-2" : ""}>
-            <QuickActions actions={data.quickActions} />
-          </div>
+          <QuickActions actions={data.quickActions} />
         )}
-      </div>
-
-      {/* Status footer */}
-      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
-        <p className="text-xs text-muted-foreground">
-          CRM and Sales modules active. Projects, Tasks, and Finance coming in future phases.
-        </p>
       </div>
     </div>
   );

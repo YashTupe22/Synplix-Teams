@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus } from "lucide-react";
@@ -25,25 +25,28 @@ export function DocumentSection({
   const [documents, setDocuments] = useState(initialDocuments);
   const [showUploader, setShowUploader] = useState(false);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     try {
+      const controller = new AbortController();
       const response = await fetch(
-        `/api/documents?entity_type=${entityType}&entity_id=${entityId}`
+        `/api/documents?entity_type=${entityType}&entity_id=${entityId}`,
+        { signal: controller.signal }
       );
       if (response.ok) {
         const data = await response.json();
         setDocuments(data.data || []);
       }
+      return () => controller.abort();
     } catch {
       // Silently fail - use initial documents
     }
-  };
+  }, [entityType, entityId]);
 
   useEffect(() => {
     if (initialDocuments.length === 0) {
       fetchDocuments();
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, initialDocuments.length, fetchDocuments]);
 
   return (
     <Card>

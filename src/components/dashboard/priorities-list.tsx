@@ -63,8 +63,8 @@ export function PrioritiesList({ priorities, loading }: PrioritiesListProps) {
       {priorities.length === 0 ? (
         <EmptyState
           icon={<Clock className="size-6" />}
-          title="No priorities yet"
-          description="Your tasks and deadlines will appear here once the Tasks module is live."
+          title="No priorities"
+          description="No tasks due today or overdue. You're all clear!"
         />
       ) : (
         <div className="space-y-2">

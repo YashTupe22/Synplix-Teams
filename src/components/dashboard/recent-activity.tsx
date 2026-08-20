@@ -1,6 +1,24 @@
 "use client";
 
-import { ActivityIcon, Shield, UserCog, UserCheck, UserX, type LucideIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  Shield,
+  UserCog,
+  UserCheck,
+  UserX,
+  TrendingUp,
+  Building2,
+  Contact,
+  DollarSign,
+  Phone,
+  Clock,
+  FolderKanban,
+  CheckSquare,
+  FileText,
+  Receipt,
+  CreditCard,
+  type LucideIcon,
+} from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +35,31 @@ const actionIcons: Record<string, LucideIcon> = {
   "User activated": UserCheck,
   "User deactivated": UserX,
   "Profile updated": UserCog,
+  "Lead created": TrendingUp,
+  "Lead updated": TrendingUp,
+  "Lead status changed": TrendingUp,
+  "Company created": Building2,
+  "Company updated": Building2,
+  "Contact created": Contact,
+  "Contact updated": Contact,
+  "Opportunity created": DollarSign,
+  "Opportunity won": DollarSign,
+  "Opportunity lost": DollarSign,
+  "Call logged": Phone,
+  "Follow-up created": Clock,
+  "Follow-up completed": Clock,
+  "Client created": Building2,
+  "Client converted from opportunity": Building2,
+  "Project created": FolderKanban,
+  "Project updated": FolderKanban,
+  "Task created": CheckSquare,
+  "Task completed": CheckSquare,
+  "Quotation created": FileText,
+  "Quotation accepted": FileText,
+  "Quotation rejected": FileText,
+  "Invoice created": Receipt,
+  "Payment recorded": CreditCard,
+  "Expense created": Receipt,
 };
 
 export function RecentActivity({ activities, loading, isAdmin }: RecentActivityProps) {
@@ -39,21 +82,6 @@ export function RecentActivity({ activities, loading, isAdmin }: RecentActivityP
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <SectionCard
-        title="Recent Activity"
-        description="Activity feed is admin-only"
-      >
-        <EmptyState
-          icon={<ActivityIcon className="size-6" />}
-          title="Admin access required"
-          description="The activity feed shows system-wide actions and is available to administrators only."
-        />
-      </SectionCard>
-    );
-  }
-
   return (
     <SectionCard
       title="Recent Activity"
@@ -67,7 +95,7 @@ export function RecentActivity({ activities, loading, isAdmin }: RecentActivityP
         <EmptyState
           icon={<ActivityIcon className="size-6" />}
           title="No activity yet"
-          description="System actions like role changes and user management will appear here."
+          description="Actions across the system will appear here."
         />
       ) : (
         <div className="space-y-0">

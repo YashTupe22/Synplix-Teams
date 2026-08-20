@@ -74,8 +74,7 @@ export const NAV_ITEMS = [
     title: "Analytics",
     href: "/analytics",
     icon: "BarChart3" as const,
-    disabled: true,
-    comingSoon: true,
+    disabled: false,
     permission: "analytics.view" as const,
   },
   {

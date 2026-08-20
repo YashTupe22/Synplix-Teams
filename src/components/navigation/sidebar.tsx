@@ -160,7 +160,7 @@ export function Sidebar({ collapsed = false, onNavigate, user }: SidebarProps) {
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={8}>
                     {item.title}
-                    {"comingSoon" in item && item.comingSoon && " (Coming Soon)"}
+                    {"comingSoon" in item && item.comingSoon ? " (Coming Soon)" : null}
                   </TooltipContent>
                 </Tooltip>
               );

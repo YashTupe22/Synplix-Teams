@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
@@ -29,8 +29,10 @@ export function DocumentBrowser({
   const [result, setResult] = useState(initialResult);
   const [filters, setFilters] = useState(initialFilters);
   const [loading, setLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState(initialFilters.search || "");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const fetchDocuments = async (newFilters: typeof filters) => {
+  const fetchDocuments = useCallback(async (newFilters: typeof filters) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -46,13 +48,23 @@ export function DocumentBrowser({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = (value: string) => {
-    const newFilters = { ...filters, search: value || undefined, page: 1 };
-    setFilters(newFilters);
-    fetchDocuments(newFilters);
-  };
+  const handleSearch = useCallback((value: string) => {
+    setSearchInput(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      const newFilters = { ...filters, search: value || undefined, page: 1 };
+      setFilters(newFilters);
+      fetchDocuments(newFilters);
+    }, 300);
+  }, [filters, fetchDocuments]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, []);
 
   const handleEntityFilter = (entityType: DocumentEntityType | undefined) => {
     const newFilters = { ...filters, entity_type: entityType, page: 1 };
@@ -74,7 +86,7 @@ export function DocumentBrowser({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search documents..."
-            defaultValue={filters.search || ""}
+            value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
           />

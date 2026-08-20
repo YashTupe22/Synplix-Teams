@@ -7,6 +7,8 @@ import type {
   Activity,
   PipelineStage,
   QuickAction,
+  Priority,
+  ProjectSummary,
 } from "@/types/dashboard";
 
 function getGreeting(): string {
@@ -244,10 +246,10 @@ function buildQuickActions(role: UserRole): QuickAction[] {
       id: "create-quotation",
       label: "Create Quotation",
       icon: "FileText",
-      href: "/sales/quotations/new",
-      enabled: false,
-      permission: Permission.SALES_MANAGE,
-      description: "Sales module coming in Phase 6",
+      href: "/finance/quotations/new",
+      enabled: true,
+      permission: Permission.FINANCE_MANAGE,
+      description: "Create a new quotation for a client",
     },
   ];
 
@@ -300,8 +302,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
   const role = profile.role as UserRole;
 
-  // Fetch CRM data, sales data, client/project data, task data, finance data, and recent activity in parallel
-  const [crmData, salesResult, clientProjectResult, taskResult, financeResult, auditResult] = await Promise.all([
+  // Fetch CRM data, sales data, client/project data, task data, finance data, recent activity, and project list in parallel
+  const [crmData, salesResult, clientProjectResult, taskResult, financeResult, auditResult, projectsListResult] = await Promise.all([
     getCRMData(supabase, role, user.id),
     (role === "admin" || role === "manager" || role === "employee")
       ? supabase.from("sales_opportunities").select("stage, value, probability").then(async (oppRes) => {
@@ -394,7 +396,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
 
           let taskQuery = supabase
             .from("tasks")
-            .select("id, status, due_date, assigned_to");
+            .select("id, status, due_date, assigned_to, title, priority");
 
           if (role === "employee") {
             taskQuery = taskQuery.eq("assigned_to", user.id);
@@ -412,6 +414,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
             overdue: activeTasks.filter((t) => t.due_date && t.due_date < today).length,
             dueToday: activeTasks.filter((t) => t.due_date === today).length,
             completed: allTasks.filter((t) => t.status === "completed").length,
+            allTasks,
           };
         })()
       : Promise.resolve(undefined),
@@ -449,13 +452,35 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
           return { revenueThisMonth, outstanding, overdue };
         })()
       : Promise.resolve(undefined),
-    role === "admin"
-      ? supabase
-          .from("audit_logs")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(10)
-      : Promise.resolve({ data: null }),
+    // Audit logs (all users)
+    supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(15),
+    // Projects list for project overview
+    (role === "admin" || role === "manager" || role === "employee")
+      ? (async () => {
+          let projectsQuery = supabase
+            .from("projects")
+            .select("id, name, status, progress_percent, target_end_date, client_id, clients(name, companies(name))");
+
+          if (role === "employee") {
+            projectsQuery = projectsQuery.or(`
+              project_manager_id.eq.${user.id},
+              EXISTS (
+                SELECT 1 FROM public.project_members pm
+                WHERE pm.project_id = projects.id AND pm.user_id = ${user.id}
+              )
+            `);
+          }
+
+          projectsQuery = projectsQuery.in("status", ["planning", "active", "on_hold"]).order("target_end_date", { ascending: true, nullsFirst: true }).limit(10);
+
+          const { data } = await projectsQuery;
+          return data ?? [];
+        })()
+      : Promise.resolve([]),
   ]);
 
   const recentActivity: Activity[] = (auditResult.data ?? []).map((log) => ({
@@ -469,20 +494,72 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     metadata: log.metadata,
   }));
 
+  // Build priorities from actual tasks (overdue first, then due today, then upcoming)
+  const today = new Date().toISOString().split("T")[0];
+  const allTasks = taskResult?.allTasks ?? [];
+  const priorities: Priority[] = allTasks
+    .filter((t) => t.status !== "completed" && t.status !== "cancelled")
+    .sort((a, b) => {
+      const aOverdue = a.due_date && a.due_date < today;
+      const bOverdue = b.due_date && b.due_date < today;
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      const aDueToday = a.due_date === today;
+      const bDueToday = b.due_date === today;
+      if (aDueToday && !bDueToday) return -1;
+      if (!aDueToday && bDueToday) return 1;
+      if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+      if (a.due_date) return -1;
+      if (b.due_date) return 1;
+      return 0;
+    })
+    .slice(0, 8)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      module: "tasks",
+      icon: "CheckSquare",
+      dueIn: t.due_date
+        ? t.due_date < today
+          ? "Overdue"
+          : t.due_date === today
+            ? "Due today"
+            : `Due ${t.due_date}`
+        : null,
+      status: t.due_date && t.due_date < today
+        ? "overdue"
+        : t.status === "completed"
+          ? "completed"
+          : "pending" as const,
+    }));
+
+  // Build projects list for project overview
+  const projectList: ProjectSummary[] = (projectsListResult ?? []).map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    progress: p.progress_percent ?? 0,
+    client: p.clients?.companies?.name ?? p.clients?.name ?? null,
+    deadline: p.target_end_date ?? null,
+  }));
+
+  // Build KPIs once (avoid triple-call)
+  const kpis = buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult);
+
   return {
     user: profile as Profile,
     greeting: getGreeting(),
     currentDate: formatDate(),
-    kpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult),
-    priorities: [],
+    kpis,
+    priorities,
     recentActivity,
     salesPipeline: buildPipeline(crmData.statusCounts),
-    projects: [],
+    projects: projectList,
     quickActions: buildQuickActions(role),
     stats: {
-      totalKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult).length,
-      availableKpis: buildKpis(role, crmData, salesResult, clientProjectResult, taskResult, financeResult).filter((k) => k.status === "available").length,
-      totalPriorities: 0,
+      totalKpis: kpis.length,
+      availableKpis: kpis.filter((k) => k.status === "available").length,
+      totalPriorities: priorities.length,
       totalActivity: recentActivity.length,
     },
   };

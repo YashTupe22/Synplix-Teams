@@ -1,11 +1,11 @@
 "use client";
 
-import { FolderKanban, Construction } from "lucide-react";
+import { FolderKanban } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { EmptyState } from "@/components/empty-state";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProjectSummary } from "@/types/dashboard";
+import Link from "next/link";
 
 interface ProjectOverviewProps {
   projects: ProjectSummary[];
@@ -38,26 +38,21 @@ export function ProjectOverview({ projects, loading }: ProjectOverviewProps) {
     <SectionCard
       title="Project Overview"
       description="Active projects"
-      headerAction={
-        <Badge variant="secondary" className="text-[10px]">
-          <Construction className="mr-1 size-2.5" />
-          Phase 6
-        </Badge>
-      }
     >
       {projects.length === 0 ? (
         <EmptyState
           icon={<FolderKanban className="size-6" />}
-          title="No projects yet"
-          description="Your projects will appear here once the Projects module is implemented."
+          title="No active projects"
+          description="Create a project to get started."
           className="py-8"
         />
       ) : (
         <div className="space-y-2">
           {projects.map((project) => (
-            <div
+            <Link
               key={project.id}
-              className="flex items-center justify-between rounded-md border border-border p-3 transition-colors hover:bg-muted/50"
+              href={`/projects/${project.id}`}
+              className="flex items-center justify-between rounded-md border border-border p-3 transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{project.name}</p>
@@ -74,7 +69,7 @@ export function ProjectOverview({ projects, loading }: ProjectOverviewProps) {
                   />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

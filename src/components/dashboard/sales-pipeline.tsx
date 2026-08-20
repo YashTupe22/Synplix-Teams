@@ -1,9 +1,8 @@
 "use client";
 
-import { Construction } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { SectionCard } from "@/components/section-card";
 import { EmptyState } from "@/components/empty-state";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PipelineStage } from "@/types/dashboard";
 
@@ -37,18 +36,12 @@ export function SalesPipeline({ stages, loading }: SalesPipelineProps) {
     <SectionCard
       title="Sales Pipeline"
       description="Lead pipeline overview"
-      headerAction={
-        <Badge variant="secondary" className="text-[10px]">
-          <Construction className="mr-1 size-2.5" />
-          Phase 4
-        </Badge>
-      }
     >
       {!hasData ? (
         <EmptyState
-          icon={<Construction className="size-6" />}
+          icon={<TrendingUp className="size-6" />}
           title="No pipeline data"
-          description="Your sales pipeline stages will populate here once the CRM module is implemented."
+          description="Your sales pipeline stages will populate as leads are created."
           className="py-8"
         />
       ) : (

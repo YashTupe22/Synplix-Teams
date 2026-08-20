@@ -7,8 +7,10 @@ import {
   CheckSquare,
   FileText,
   ArrowRight,
-  Lock,
+  Phone,
+  DollarSign,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,6 +23,8 @@ const iconMap = {
   FolderKanban,
   CheckSquare,
   FileText,
+  Phone,
+  DollarSign,
 };
 
 interface QuickActionsProps {
@@ -28,6 +32,8 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ actions }: QuickActionsProps) {
+  const router = useRouter();
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -50,16 +56,17 @@ export function QuickActions({ actions }: QuickActionsProps) {
                       disabled={!action.enabled}
                       aria-disabled={!action.enabled}
                       aria-label={`${action.label} - ${action.description}`}
+                      onClick={() => {
+                        if (action.enabled && action.href) {
+                          router.push(action.href);
+                        }
+                      }}
                     />
                   }
                 >
                   <Icon className="size-4 shrink-0" aria-hidden="true" />
                   <span className="flex-1 text-left">{action.label}</span>
-                  {action.enabled ? (
-                    <ArrowRight className="size-3.5 text-muted-foreground" />
-                  ) : (
-                    <Lock className="size-3.5 text-muted-foreground" />
-                  )}
+                  <ArrowRight className="size-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={4}>
                   <p>{action.description}</p>
@@ -68,11 +75,6 @@ export function QuickActions({ actions }: QuickActionsProps) {
             );
           })}
         </div>
-        {actions.some((a) => !a.enabled) && (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Modules will be enabled as features are implemented in future phases.
-          </p>
-        )}
       </CardContent>
     </Card>
   );

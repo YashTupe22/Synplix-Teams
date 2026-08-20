@@ -33,6 +33,8 @@ export function Topbar({ onMenuToggle, user, notificationBell }: TopbarProps) {
   const { setTheme } = useTheme();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const displayName = user?.full_name || user?.email?.split("@")[0] || "User";
   const initials = user?.full_name
@@ -43,6 +45,30 @@ export function Topbar({ onMenuToggle, user, notificationBell }: TopbarProps) {
         .toUpperCase()
         .slice(0, 2)
     : displayName.charAt(0).toUpperCase();
+
+  // Keyboard shortcut: "/" to focus search
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    // Navigate to search — use CRM leads as default search target
+    router.push(`/crm/leads?search=${encodeURIComponent(q)}`);
+    setSearchQuery("");
+    searchInputRef.current?.blur();
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center border-b border-border bg-background/80 backdrop-blur-sm" aria-label="Top navigation">
@@ -73,16 +99,24 @@ export function Topbar({ onMenuToggle, user, notificationBell }: TopbarProps) {
         </Button>
       </div>
 
-      {/* Search bar placeholder */}
-      <div className="flex flex-1 items-center px-4">
-        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground md:w-64">
-          <Search className="size-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Search...</span>
-          <kbd className="pointer-events-none ml-auto hidden select-none rounded border border-border bg-background px-1.5 text-[10px] font-medium text-muted-foreground sm:inline">
+      {/* Search bar */}
+      <form onSubmit={handleSearch} className="flex flex-1 items-center px-4">
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground focus-within:border-ring focus-within:ring-1 focus-within:ring-ring md:w-64 transition-colors">
+          <Search className="size-4 shrink-0" aria-hidden="true" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            aria-label="Search"
+          />
+          <kbd className="pointer-events-none hidden select-none rounded border border-border bg-background px-1.5 text-[10px] font-medium text-muted-foreground sm:inline">
             /
           </kbd>
         </div>
-      </div>
+      </form>
 
       {/* Right actions */}
       <div className="flex items-center gap-1 px-4">
