@@ -199,26 +199,90 @@ CREATE POLICY "Employees can view documents for their opportunities"
         )
     );
 
--- Employee: can view documents on tasks in their projects (broader access)
-CREATE POLICY "Employees can view documents for tasks in their projects"
+-- Employee: can view documents on companies they have leads for
+CREATE POLICY "Employees can view documents for their companies"
     ON public.documents
     FOR SELECT
     TO authenticated
     USING (
         public.get_user_role(auth.uid()) = 'employee'
         AND public.is_user_active(auth.uid())
-        AND entity_type = 'task'
+        AND entity_type = 'company'
         AND EXISTS (
-            SELECT 1 FROM public.tasks t
-            JOIN public.projects p ON p.id = t.project_id
-            WHERE t.id = documents.entity_id
-              AND (
-                  p.project_manager_id = auth.uid()
-                  OR EXISTS (
-                      SELECT 1 FROM public.project_members pm
-                      WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
-                  )
-              )
+            SELECT 1 FROM public.leads l
+            WHERE l.company_id = documents.entity_id
+              AND l.assigned_to = auth.uid()
+        )
+    );
+
+-- Employee: can view documents on contacts linked to their opportunities/leads
+CREATE POLICY "Employees can view documents for their contacts"
+    ON public.documents
+    FOR SELECT
+    TO authenticated
+    USING (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND entity_type = 'contact'
+        AND (
+            EXISTS (
+                SELECT 1 FROM public.leads l
+                WHERE l.contact_id = documents.entity_id
+                  AND l.assigned_to = auth.uid()
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.opportunities o
+                WHERE o.contact_id = documents.entity_id
+                  AND o.assigned_to = auth.uid()
+            )
+        )
+    );
+
+-- Employee: can view documents on quotations for their projects/clients
+CREATE POLICY "Employees can view documents for their quotations"
+    ON public.documents
+    FOR SELECT
+    TO authenticated
+    USING (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND entity_type = 'quotation'
+        AND EXISTS (
+            SELECT 1 FROM public.quotations q
+            WHERE q.id = documents.entity_id
+              AND q.created_by = auth.uid()
+        )
+    );
+
+-- Employee: can view documents on invoices for their projects/clients
+CREATE POLICY "Employees can view documents for their invoices"
+    ON public.documents
+    FOR SELECT
+    TO authenticated
+    USING (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND entity_type = 'invoice'
+        AND EXISTS (
+            SELECT 1 FROM public.invoices i
+            WHERE i.id = documents.entity_id
+              AND i.created_by = auth.uid()
+        )
+    );
+
+-- Employee: can view documents on expenses they recorded
+CREATE POLICY "Employees can view documents for their expenses"
+    ON public.documents
+    FOR SELECT
+    TO authenticated
+    USING (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND entity_type = 'expense'
+        AND EXISTS (
+            SELECT 1 FROM public.expenses e
+            WHERE e.id = documents.entity_id
+              AND e.created_by = auth.uid()
         )
     );
 
@@ -273,6 +337,91 @@ CREATE POLICY "Employees can insert documents for their tasks"
                         )
                   )
               )
+        )
+    );
+
+-- Employee: can insert documents on leads they own
+CREATE POLICY "Employees can insert documents for their leads"
+    ON public.documents
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND uploaded_by = auth.uid()
+        AND entity_type = 'lead'
+        AND EXISTS (
+            SELECT 1 FROM public.leads l
+            WHERE l.id = documents.entity_id
+              AND l.assigned_to = auth.uid()
+        )
+    );
+
+-- Employee: can insert documents on opportunities they own
+CREATE POLICY "Employees can insert documents for their opportunities"
+    ON public.documents
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND uploaded_by = auth.uid()
+        AND entity_type = 'opportunity'
+        AND EXISTS (
+            SELECT 1 FROM public.opportunities o
+            WHERE o.id = documents.entity_id
+              AND o.assigned_to = auth.uid()
+        )
+    );
+
+-- Employee: can insert documents on quotations they created
+CREATE POLICY "Employees can insert documents for their quotations"
+    ON public.documents
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND uploaded_by = auth.uid()
+        AND entity_type = 'quotation'
+        AND EXISTS (
+            SELECT 1 FROM public.quotations q
+            WHERE q.id = documents.entity_id
+              AND q.created_by = auth.uid()
+        )
+    );
+
+-- Employee: can insert documents on invoices they created
+CREATE POLICY "Employees can insert documents for their invoices"
+    ON public.documents
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND uploaded_by = auth.uid()
+        AND entity_type = 'invoice'
+        AND EXISTS (
+            SELECT 1 FROM public.invoices i
+            WHERE i.id = documents.entity_id
+              AND i.created_by = auth.uid()
+        )
+    );
+
+-- Employee: can insert documents on expenses they recorded
+CREATE POLICY "Employees can insert documents for their expenses"
+    ON public.documents
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.get_user_role(auth.uid()) = 'employee'
+        AND public.is_user_active(auth.uid())
+        AND uploaded_by = auth.uid()
+        AND entity_type = 'expense'
+        AND EXISTS (
+            SELECT 1 FROM public.expenses e
+            WHERE e.id = documents.entity_id
+              AND e.created_by = auth.uid()
         )
     );
 

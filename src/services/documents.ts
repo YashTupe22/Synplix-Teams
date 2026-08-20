@@ -200,8 +200,9 @@ export async function deleteDocument(id: string): Promise<void> {
 
   if (storageError) {
     console.error("Storage deletion failed:", storageError);
-    // Continue with DB deletion even if storage fails
-    // Log for manual cleanup
+    throw new Error(
+      `Failed to delete file from storage: ${storageError.message || "Unknown error"}`
+    );
   }
 
   // Delete metadata from DB

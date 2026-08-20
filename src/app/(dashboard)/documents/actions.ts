@@ -85,12 +85,18 @@ export async function uploadDocumentAction(
       entity_id: entityId,
     };
 
-    const doc = await createDocument(docInsert);
-
-    revalidatePath("/documents");
-    revalidatePath(`/${entityType}s/${entityId}`);
-
-    return { success: true, id: doc.id };
+    try {
+      const doc = await createDocument(docInsert);
+      revalidatePath("/documents");
+      revalidatePath(`/${entityType}s/${entityId}`);
+      return { success: true, id: doc.id };
+    } catch (dbError) {
+      // DB insert failed after storage upload — clean up orphaned file
+      console.error("DB insert failed, cleaning up storage:", dbError);
+      const serviceClient = (await import("@/lib/supabase/server")).createServiceClient();
+      await serviceClient.storage.from("synplix-documents").remove([storagePath]);
+      return { error: "Failed to save document metadata" };
+    }
   } catch (error) {
     console.error("Upload action error:", error);
     return { error: "An unexpected error occurred" };
@@ -144,6 +150,10 @@ export async function getDocumentUrlAction(
   id: string
 ): Promise<{ url?: string; error?: string }> {
   try {
+    const { requirePermission } = await import("@/lib/authorization-server");
+    const { Permission } = await import("@/lib/authorization");
+    await requirePermission(Permission.DOCUMENTS_VIEW);
+
     const { createClient } = await import("@/lib/supabase/server");
     const supabase = await createClient();
 
